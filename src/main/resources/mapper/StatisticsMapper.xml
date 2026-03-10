@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lostfound.server.mapper.StatisticsMapper">
+
+    <!-- 获取系统统计数据 -->
+    <select id="getSystemStatistics" resultType="com.lostfound.server.dto.SystemStatisticsDTO">
+        SELECT 
+            (SELECT COUNT(*) FROM users) as totalUsers,
+            (SELECT COUNT(*) FROM lost_items) as totalLostItems,
+            (SELECT COUNT(*) FROM claim_records) as totalClaimRecords,
+            (SELECT COUNT(*) FROM lost_items WHERE status = 'RETURNED') as returnedItems,
+            (SELECT COUNT(*) FROM users WHERE DATE(created_time) = CURDATE()) as todayNewUsers,
+            (SELECT COUNT(*) FROM lost_items WHERE DATE(created_time) = CURDATE()) as todayNewLostItems,
+            (SELECT COUNT(*) FROM claim_records WHERE DATE(created_time) = CURDATE()) as todayNewClaimRecords,
+            (SELECT COUNT(*) FROM claim_records WHERE status = 'PENDING') as pendingClaimRecords,
+            (SELECT COUNT(*) FROM users WHERE YEAR(created_time) = YEAR(CURDATE()) AND MONTH(created_time) = MONTH(CURDATE())) as monthNewUsers,
+            (SELECT COUNT(*) FROM lost_items WHERE YEAR(created_time) = YEAR(CURDATE()) AND MONTH(created_time) = MONTH(CURDATE())) as monthNewLostItems,
+            (SELECT COUNT(*) FROM claim_records WHERE YEAR(created_time) = YEAR(CURDATE()) AND MONTH(created_time) = MONTH(CURDATE())) as monthNewClaimRecords,
+            (SELECT COUNT(*) FROM lost_items WHERE status = 'RETURNED' AND YEAR(created_time) = YEAR(CURDATE()) AND MONTH(created_time) = MONTH(CURDATE())) as monthReturnedItems
+    </select>
+
+    <!-- 失物类型分布统计 -->
+    <select id="getItemTypeDistribution" resultType="com.lostfound.server.dto.ItemTypeDistributionDTO">
+        SELECT 
+            li.category_id as categoryId,
+            ic.category_name as categoryName,
+            COUNT(*) as count
+        FROM lost_items li
+        JOIN item_categories ic ON li.category_id = ic.id
+        GROUP BY li.category_id, ic.category_name
+        ORDER BY count DESC
+    </select>
+
+    <!-- 获取高发丢失地点统计 -->
+    <select id="getHotLocations" resultType="com.lostfound.server.dto.HotLocationDTO">
+        SELECT 
+            lost_location as location,
+            COUNT(*) as count
+        FROM lost_items
+        WHERE lost_location IS NOT NULL AND lost_location != ''
+        GROUP BY lost_location
+        ORDER BY count DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 获取失物状态统计 -->
+    <select id="getItemStatusStatistics" resultType="com.lostfound.server.dto.ItemStatusStatisticsDTO">
+        SELECT 
+            CASE status
+                WHEN 'LOST' THEN 0
+                WHEN 'FOUND' THEN 1
+                WHEN 'RETURNED' THEN 2
+                ELSE 3
+            END as status,
+            COUNT(*) as count
+        FROM lost_items
+        GROUP BY status
+        ORDER BY count DESC
+    </select>
+
+    <!-- 获取月度失物统计 -->
+    <select id="getMonthlyItemStatistics" resultType="com.lostfound.server.dto.MonthlyItemStatisticsDTO">
+        SELECT 
+            YEAR(created_time) as year,
+            MONTH(created_time) as month,
+            COUNT(*) as count,
+            COUNT(CASE WHEN status = 'FOUND' THEN 1 END) as claimCount,
+            COUNT(CASE WHEN status = 'RETURNED' THEN 1 END) as returnCount
+        FROM lost_items
+        WHERE created_time IS NOT NULL AND created_time >= DATE_SUB(NOW(), INTERVAL #{months} MONTH)
+        GROUP BY YEAR(created_time), MONTH(created_time)
+        ORDER BY year DESC, month DESC
+        LIMIT 12
+    </select>
+
+    <!-- 获取指定年份的月度失物统计 -->
+    <select id="getYearlyItemStatistics" resultType="com.lostfound.server.dto.MonthlyItemStatisticsDTO">
+        SELECT 
+            YEAR(created_time) as year,
+            MONTH(created_time) as month,
+            COUNT(*) as count,
+            COUNT(CASE WHEN status = 'FOUND' THEN 1 END) as claimCount,
+            COUNT(CASE WHEN status = 'RETURNED' THEN 1 END) as returnCount
+        FROM lost_items
+        WHERE created_time IS NOT NULL AND YEAR(created_time) = #{year}
+        GROUP BY YEAR(created_time), MONTH(created_time)
+        ORDER BY year ASC, month ASC
+    </select>
+
+</mapper>

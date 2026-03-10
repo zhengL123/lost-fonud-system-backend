@@ -1,0 +1,76 @@
+spring:
+  datasource:
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/lost_and_found?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+  redis:
+    host: ${REDIS_HOST}
+    port: ${REDIS_PORT}
+    password: ${REDIS_PASSWORD}
+    database: ${REDIS_DB}
+    timeout: 3000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-wait: -1ms
+        max-idle: 8
+        min-idle: 0
+
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+  mapper-locations: classpath:mapper/*.xml
+
+server:
+  port: ${SERVER_PORT}
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: ${SWAGGER_ENABLE}
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: 36000000
+
+frontend:
+  url: ${FRONTEND_URL}
+
+password:
+  crypto:
+    secret: ${PASSWORD_CRYPTO_SECRET}
+
+file:
+  upload:
+    path: ${FILE_UPLOAD_PATH}
+    domain: ${FILE_DOMAIN}
+
+logging:
+  level:
+    com.lostfound.server: ${LOG_LEVEL}
+    org.springframework.security: ${LOG_LEVEL}
+    org.springframework.web: ${LOG_LEVEL}
+    root: INFO
